@@ -23,7 +23,8 @@ export * from './useVideoGestures';
 export * from './useVoiceRecognition';
 
 // Optimized gesture handlers with native-driven animations
-export * from './useOptimizedSwipe';
-export * from './useOptimizedPinchZoom';
 export * from './useOptimizedLongPress';
+export * from './useOptimizedPinchZoom';
+export * from './useOptimizedSwipe';
 export * from './useOptimizedVideoGestures';
+
