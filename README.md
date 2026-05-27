@@ -49,6 +49,74 @@ npm run test:coverage          # Run with coverage report
 npx jest src/__tests__/path/to/file.test.ts
 ```
 
+## Performance Audit
+
+TeachLink includes a comprehensive performance audit system for analyzing and optimizing all aspects of the application.
+
+### Quick Start
+
+```bash
+# Run performance audit
+npm run audit:performance
+
+# Generate detailed HTML report
+npm run audit:performance:html
+
+# Generate all report formats (JSON, HTML, Markdown)
+npm run audit:performance:all
+
+# Compare with baseline
+npm run audit:performance:compare
+
+# Save current performance as baseline
+npm run audit:save-baseline
+
+# Watch mode (re-run on changes)
+npm run audit:performance:watch
+```
+
+### What Gets Analyzed
+
+The audit system analyzes 7 key performance dimensions:
+
+1. **Bundle Size** — Total size, chunks, duplicates, large files
+2. **Memory** — Heap usage, leaks, large objects
+3. **Render Performance** — Slow components, re-renders, animations
+4. **Network** — API endpoints, request deduplication, assets
+5. **Dependencies** — Vulnerabilities, outdated packages, licensing
+6. **Runtime** — Startup time, first paint, CPU usage
+7. **Assets** — Images, fonts, optimization opportunities
+
+### Reports
+
+Audit reports are generated in multiple formats:
+- **JSON** — Structured data for programmatic processing
+- **HTML** — Beautiful interactive reports
+- **Markdown** — GitHub-friendly documentation
+
+### Quarterly Planning
+
+The audit system supports quarterly performance reviews and roadmap planning:
+
+```bash
+# Run full audit at quarter start
+npm run audit:performance:all
+
+# Save as baseline
+npm run audit:save-baseline
+
+# Each month, compare with baseline
+npm run audit:performance:compare
+```
+
+For quarterly planning guide, see [PERFORMANCE_AUDIT_QUARTERLY.md](./PERFORMANCE_AUDIT_QUARTERLY.md)
+
+### Documentation
+
+- Full documentation: [src/audit/README.md](./src/audit/README.md)
+- Quarterly process guide: [PERFORMANCE_AUDIT_QUARTERLY.md](./PERFORMANCE_AUDIT_QUARTERLY.md)
+- Detailed analyzer docs in `src/audit/analyzers/`
+
 ## Logging
 
 TeachLink uses a centralized, production-grade logging system with structured JSON output, context propagation, and remote integration.

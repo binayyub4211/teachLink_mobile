@@ -27,7 +27,14 @@
     "deploy:preview": "bash ./scripts/deploy-preview.sh",
     "prepare": "husky",
     "audit": "npm audit --audit-level=high",
-    "depcheck": "depcheck"
+    "depcheck": "depcheck",
+    "audit:performance": "tsx src/audit/cli.ts",
+    "audit:performance:html": "tsx src/audit/cli.ts --format html --output ./reports/audit-report",
+    "audit:performance:all": "tsx src/audit/cli.ts --format all --output ./reports/audit-report",
+    "audit:performance:compare": "tsx src/audit/cli.ts --compare --baseline ./audit-baseline.json",
+    "audit:performance:watch": "tsx src/audit/cli.ts --watch",
+    "audit:save-baseline": "cp audit-report.json audit-baseline.json && echo 'Baseline saved'",
+    "perf:analyze": "tsx src/audit/cli.ts --format html --output ./reports/performance-analysis"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
