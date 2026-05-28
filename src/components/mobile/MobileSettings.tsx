@@ -35,9 +35,9 @@ import {
   Fingerprint as FingerprintPattern,
 } from 'lucide-react-native';
 
-import { useAppStore } from '../../store';
+import { useTheme, useAppStore } from '../../store';
 import { useNotificationStore } from '../../store/notificationStore';
-import { useSettingsStore } from '../../store/settingsStore';
+import { useSettingsStore, ProfileVisibility, DownloadQuality } from '../../store/settingsStore';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { useDynamicFontSize } from '../../hooks';
 
@@ -108,18 +108,18 @@ function SettingRow({
 // Options
 // ─────────────────────────────────────────────────────────────
 
-const VISIBILITY_OPTIONS: PickerOption[] = [
+const VISIBILITY_OPTIONS: PickerOption<ProfileVisibility>[] = [
   { label: 'Public', value: 'public' },
   { label: 'Friends Only', value: 'friends_only' },
   { label: 'Private', value: 'private' },
 ];
 
-const THEME_OPTIONS: PickerOption[] = [
+const THEME_OPTIONS: PickerOption<'light' | 'dark'>[] = [
   { label: 'Light', value: 'light' },
   { label: 'Dark', value: 'dark' },
 ];
 
-const QUALITY_OPTIONS: PickerOption[] = [
+const QUALITY_OPTIONS: PickerOption<DownloadQuality>[] = [
   { label: 'Low', value: 'low' },
   { label: 'Medium', value: 'medium' },
   { label: 'High', value: 'high' },
@@ -187,7 +187,8 @@ export function MobileSettings({
   onChangePassword,
   onLinkedAccounts,
 }: any) {
-  const { theme, setTheme } = useAppStore();
+  const theme = useTheme();
+  const setTheme = useAppStore(state => state.setTheme);
   const { preferences, setPreference } = useNotificationStore();
 
   // Progressive disclosure: advanced settings collapsed by default

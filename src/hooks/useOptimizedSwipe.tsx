@@ -5,33 +5,17 @@
  * gestures with animations on the native thread, avoiding JS bridge overhead.
  */
 
-import React, { useCallback, useMemo, useRef } from 'react';
-import {
-  Gesture,
-  GestureDetector,
-  gestureHandlerRootHOC,
-} from 'react-native-gesture-handler';
+import React, { useCallback, useRef } from 'react';
+import { ViewStyle } from 'react-native';
+import { Gesture, GestureDetector, gestureHandlerRootHOC } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   runOnJS,
-  interpolate,
-  Extrapolate,
 } from 'react-native-reanimated';
-import { View, ViewStyle } from 'react-native';
 
-export type SwipeDirection = 'left' | 'right' | 'up' | 'down';
-
-export interface SwipeInfo {
-  direction: SwipeDirection;
-  distance: number;
-  dx: number;
-  dy: number;
-  velocity: number;
-  durationMs: number;
-}
+import { SwipeDirection, SwipeInfo } from './useSwipe';
 
 export interface UseOptimizedSwipeOptions {
   minDistance?: number;
@@ -128,17 +112,17 @@ export function useOptimizedSwipe(options: UseOptimizedSwipeOptions = {}) {
         durationMs,
       };
     },
-    [],
+    []
   );
 
   // Pan gesture for swipe detection
   const pan = Gesture.Pan()
-    .onStart((event) => {
+    .onStart(event => {
       stateRef.current.startX = event.x;
       stateRef.current.startY = event.y;
       stateRef.current.startTime = Date.now();
     })
-    .onUpdate((event) => {
+    .onUpdate(event => {
       // Update position values on native thread
       translateX.value = event.translationX;
       translateY.value = event.translationY;
@@ -159,34 +143,31 @@ export function useOptimizedSwipe(options: UseOptimizedSwipeOptions = {}) {
           const swipeInfo = buildSwipeInfo(
             stateRef.current.startX + dx,
             stateRef.current.startY + dy,
-            Date.now(),
+            Date.now()
           );
           // Use runOnJS to call JS callback from native animation thread
-          runOnJS(onSwipeStart?.(swipeInfo))();
+          if (onSwipeStart) runOnJS(onSwipeStart)(swipeInfo);
           opacity.value = withSpring(0.8, { damping, mass });
         }
       }
     })
-    .onEnd((event) => {
+    .onEnd(event => {
       if (stateRef.current.recognized) {
         const currentTime = Date.now();
         const swipeInfo = buildSwipeInfo(
           stateRef.current.startX + event.translationX,
           stateRef.current.startY + event.translationY,
-          currentTime,
+          currentTime
         );
 
         // Check if swipe velocity is sufficient
-        if (
-          swipeInfo.velocity > velocityThreshold ||
-          swipeInfo.distance > minDistance * 1.5
-        ) {
-          runOnJS(onSwipeEnd?.(swipeInfo))();
+        if (swipeInfo.velocity > velocityThreshold || swipeInfo.distance > minDistance * 1.5) {
+          if (onSwipeEnd) runOnJS(onSwipeEnd)(swipeInfo);
         } else {
-          runOnJS(onSwipeCancel?.())();
+          if (onSwipeCancel) runOnJS(onSwipeCancel)();
         }
       } else {
-        runOnJS(onSwipeCancel?.())();
+        if (onSwipeCancel) runOnJS(onSwipeCancel)();
       }
 
       runOnJS(resetGesture)();
@@ -213,7 +194,7 @@ export function useOptimizedSwipe(options: UseOptimizedSwipeOptions = {}) {
 /**
  * Wrapper component for easy integration with swipe-enabled views
  */
-export function OptimizedSwipeView({
+export const OptimizedSwipeView = ({
   options,
   onSwipeStart,
   onSwipeEnd,
@@ -227,7 +208,7 @@ export function OptimizedSwipeView({
   onSwipeCancel?: () => void;
   children?: React.ReactNode;
   style?: ViewStyle;
-}) {
+}) => {
   const { gesture, animatedStyle } = useOptimizedSwipe({
     ...options,
     onSwipeStart,
@@ -240,6 +221,6 @@ export function OptimizedSwipeView({
       <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>
     </GestureDetector>
   );
-}
+};
 
 export default gestureHandlerRootHOC(OptimizedSwipeView);

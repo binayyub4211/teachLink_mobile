@@ -1,13 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  Dimensions,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
   Animated,
+  Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAnalytics } from '../../hooks/useAnalytics';
@@ -39,7 +39,7 @@ interface LessonCarouselProps {
   isLastLessonInSection?: boolean;
 }
 
-export default function LessonCarousel({
+const LessonCarousel = ({
   lessons,
   currentLessonId,
   progress,
@@ -59,8 +59,12 @@ export default function LessonCarousel({
     const index = lessons.findIndex(lesson => lesson.id === currentLessonId);
     if (index !== -1 && index !== currentIndex) {
       setCurrentIndex(index);
-      scrollToIndex(index, false);
+      flatListRef.current?.scrollToIndex({ index, animated: false });
     }
+    // currentIndex intentionally omitted: we only want to sync when the
+    // controlled prop (currentLessonId / lessons) changes, not on every
+    // internal index update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLessonId, lessons]);
 
   // Update progress bar
@@ -72,7 +76,7 @@ export default function LessonCarousel({
       const progressPercent = (completedCount / lessons.length) * 100;
       Animated.spring(progressBarWidth, {
         toValue: (progressPercent / 100) * SCREEN_WIDTH,
-        useNativeDriver: false, // width animation can't use native driver
+        useNativeDriver: false,
         tension: 50,
         friction: 7,
       }).start();
@@ -115,11 +119,9 @@ export default function LessonCarousel({
   const handleMomentumScrollEnd = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
-
     if (index >= 0 && index < lessons.length) {
       setCurrentIndex(index);
-      const lesson = lessons[index];
-      onLessonChange(lesson.id, index);
+      onLessonChange(lessons[index].id, index);
     }
   };
 
@@ -140,6 +142,28 @@ export default function LessonCarousel({
       onLessonChange(lessons[newIndex].id, newIndex);
     }
   };
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index }),
+    []
+  );
+
+  const renderItem = useCallback(
+    ({ item: lesson }: { item: Lesson }) => (
+      <View style={[styles.lessonContainer, { width: SCREEN_WIDTH }]}>
+        <FlatList
+          data={[lesson]}
+          renderItem={({ item }) => (
+            <View style={styles.lessonContent}>{renderLessonContent(item)}</View>
+          )}
+          keyExtractor={() => lesson.id}
+          showsVerticalScrollIndicator
+          contentContainerStyle={styles.lessonContentContainer}
+        />
+      </View>
+    ),
+    [renderLessonContent]
+  );
 
   if (lessons.length === 0) {
     return (
@@ -202,31 +226,26 @@ export default function LessonCarousel({
       </View>
 
       {/* Swipeable Content */}
-      <ScrollView
-        ref={scrollViewRef}
+      <FlatList
+        ref={flatListRef}
+        data={lessons}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         scrollEventThrottle={16}
         decelerationRate="fast"
         snapToInterval={SCREEN_WIDTH}
         snapToAlignment="center"
-        contentContainerStyle={styles.scrollContent}
-      >
-        {lessons.map((lesson, index) => (
-          <View key={lesson.id} style={[styles.lessonContainer, { width: SCREEN_WIDTH }]}>
-            <ScrollView
-              style={styles.lessonScrollView}
-              contentContainerStyle={styles.lessonContent}
-              showsVerticalScrollIndicator={true}
-            >
-              {renderLessonContent(lesson)}
-            </ScrollView>
-          </View>
-        ))}
-      </ScrollView>
+        getItemLayout={getItemLayout}
+        windowSize={3}
+        maxToRenderPerBatch={1}
+        initialNumToRender={1}
+        removeClippedSubviews
+        testID="LessonCarouselList"
+      />
 
       {/* Navigation Buttons */}
       <View style={styles.navigationContainer}>
@@ -272,7 +291,9 @@ export default function LessonCarousel({
       </View>
     </View>
   );
-}
+};
+
+export default LessonCarousel;
 
 const styles = StyleSheet.create({
   container: {
@@ -354,19 +375,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#10b981',
   },
-  scrollContent: {
-    flexGrow: 1,
-  },
   lessonContainer: {
     flex: 1,
     backgroundColor: '#f0f1f5',
   },
-  lessonScrollView: {
-    flex: 1,
-  },
   lessonContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  lessonContentContainer: {
+    flexGrow: 1,
   },
   navigationContainer: {
     flexDirection: 'row',
