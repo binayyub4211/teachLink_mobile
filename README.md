@@ -90,6 +90,7 @@ The audit system analyzes 7 key performance dimensions:
 ### Reports
 
 Audit reports are generated in multiple formats:
+
 - **JSON** — Structured data for programmatic processing
 - **HTML** — Beautiful interactive reports
 - **Markdown** — GitHub-friendly documentation
@@ -217,7 +218,7 @@ import { retrieveLogFiles, clearLogFiles } from '@/config/logging';
 
 // Get all stored logs
 const logs = await retrieveLogFiles();
-logs.forEach((log) => console.log(log));
+logs.forEach(log => console.log(log));
 
 // Clear log storage
 await clearLogFiles();
@@ -232,7 +233,6 @@ Copy `.env.example` to `.env` and set the following:
 | `EXPO_PUBLIC_APP_ENV`                   | No       | Runtime environment (`development` / `production`) |
 | `EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS` | No       | Enable push notifications (`true` / `false`)       |
 | `EXPO_PUBLIC_STORYBOOK`                 | No       | Enable Storybook mode (`true` / `false`)           |
-
 
 The app validates `EXPO_PUBLIC_API_BASE_URL` and `EXPO_PUBLIC_SOCKET_URL` at startup and will refuse to launch with invalid or missing values.
 
@@ -307,18 +307,17 @@ Engagement is currently recorded when users open notifications. Throttling is en
 
 The project defines three EAS build profiles in `eas.json`:
 
-| Profile | Description | Usage |
-|---|---|---|
-| **development** | Fast internal build for debugging, includes development client and runs on the `development` channel. | `eas build --profile development` |
-| **preview** | Internal preview build, generates an APK for Android, runs on the `preview` channel. | `eas build --profile preview` |
-| **production** | Production‑ready build with auto‑incremented version numbers for iOS and Android, publishes to the `production` channel. | `eas build --profile production` |
+| Profile         | Description                                                                                                              | Usage                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **development** | Fast internal build for debugging, includes development client and runs on the `development` channel.                    | `eas build --profile development` |
+| **preview**     | Internal preview build, generates an APK for Android, runs on the `preview` channel.                                     | `eas build --profile preview`     |
+| **production**  | Production‑ready build with auto‑incremented version numbers for iOS and Android, publishes to the `production` channel. | `eas build --profile production`  |
 
 These profiles can also be used when submitting:
 
 - `eas submit --profile production` will use the production credentials defined in the `submit.production` section of `eas.json`.
 
 Refer to the official EAS docs for more details.
-
 
 ---
 
@@ -364,6 +363,7 @@ EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS=true
 > ⚠️ Never commit your `.env` file. It is listed in `.gitignore`.
 
 See [DEPLOY.md](./DEPLOY.md) for platform-specific setup (Google Play & App Store), build profiles, troubleshooting, and security notes.
+
 ## Analytics event throttling
 
 High-frequency analytics events (for example, carousel scroll telemetry) are tagged with:
@@ -373,6 +373,7 @@ High-frequency analytics events (for example, carousel scroll telemetry) are tag
 
 The mobile analytics service throttles those tagged events to **10 events/second per `event_name`**.
 This keeps behavioral trends useful while reducing analytics event volume and downstream ingestion cost.
+
 ## WebSocket Binary Protocol
 
 Real-time socket payloads now use a protobuf-style binary envelope for `notification_created`, `course_updated`, and `message_received` events.
@@ -382,6 +383,7 @@ Real-time socket payloads now use a protobuf-style binary envelope for `notifica
 - Payload reduction can be measured with `estimatePayloadReduction(event, payload)` for regression and bandwidth reporting.
 
 Protocol shape:
+
 - `field 1` (varint): protocol version
 - `field 2` (varint): event type id for known events
 - known event payload fields start at `field 10`

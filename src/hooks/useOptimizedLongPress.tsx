@@ -6,11 +6,8 @@
  */
 
 import React, { useCallback, useRef } from 'react';
-import {
-  Gesture,
-  GestureDetector,
-  gestureHandlerRootHOC,
-} from 'react-native-gesture-handler';
+import { ViewStyle } from 'react-native';
+import { Gesture, GestureDetector, gestureHandlerRootHOC } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -19,12 +16,8 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import { View, ViewStyle } from 'react-native';
 
-export interface LongPressInfo {
-  pageX: number;
-  pageY: number;
-}
+import { LongPressInfo } from './useLongPress';
 
 export interface UseOptimizedLongPressOptions {
   durationMs?: number;
@@ -97,7 +90,7 @@ export function useOptimizedLongPress(options: UseOptimizedLongPressOptions) {
   // Long press gesture
   const longPress = Gesture.LongPress()
     .minDuration(durationMs)
-    .onStart((event) => {
+    .onStart(event => {
       startXRef.current = event.x;
       startYRef.current = event.y;
 
@@ -113,20 +106,18 @@ export function useOptimizedLongPress(options: UseOptimizedLongPressOptions) {
         });
       }
     })
-    .onUpdate((event) => {
+    .onUpdate(event => {
       // Check if finger moved too much
-      const dx = event.x - startXRef.current;
-      const dy = event.y - startYRef.current;
       const distSq = distanceSq(event.x, startXRef.current, event.y, startYRef.current);
 
       if (distSq > maxMoveDistance * maxMoveDistance) {
         // Too much movement, cancel
         clearTimer();
         reset();
-        runOnJS(onCancel?.())();
+        if (onCancel) runOnJS(onCancel)();
       }
     })
-    .onFinalize((event) => {
+    .onFinalize(event => {
       clearTimer();
 
       if (!firedRef.current) {
@@ -173,7 +164,7 @@ export function useOptimizedLongPress(options: UseOptimizedLongPressOptions) {
 /**
  * Wrapper component for easy integration with long-press-enabled views
  */
-export function OptimizedLongPressView({
+export const OptimizedLongPressView = ({
   options,
   onLongPress,
   onCancel,
@@ -185,7 +176,7 @@ export function OptimizedLongPressView({
   onCancel?: () => void;
   children?: React.ReactNode;
   style?: ViewStyle;
-}) {
+}) => {
   const { gesture, animatedStyle } = useOptimizedLongPress({
     ...options,
     onLongPress,
@@ -197,6 +188,6 @@ export function OptimizedLongPressView({
       <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>
     </GestureDetector>
   );
-}
+};
 
 export default gestureHandlerRootHOC(OptimizedLongPressView);

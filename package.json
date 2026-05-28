@@ -1,7 +1,7 @@
 {
   "name": "teachlink_mobile",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -34,7 +34,7 @@
     "audit:performance:compare": "tsx src/audit/cli.ts --compare --baseline ./audit-baseline.json",
     "audit:performance:watch": "tsx src/audit/cli.ts --watch",
     "audit:save-baseline": "cp audit-report.json audit-baseline.json && echo 'Baseline saved'",
-    "perf:analyze": "tsx src/audit/cli.ts --format html --output ./reports/performance-analysis"
+    "perf:analyze": "tsx src/audit/cli.ts --format html --output ./reports/performance-analysis",
     "perf:bundle": "node scripts/checkBundleSize.js",
     "perf:api": "node scripts/checkApiPerf.js",
     "analyze:routes": "node scripts/analyzeRouteSizes.js",
@@ -124,5 +124,8 @@
     "**/*.{json,md,css}": [
       "prettier --write"
     ]
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "^1.32.0"
   }
 }
