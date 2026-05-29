@@ -28,6 +28,7 @@ import { handleCacheVersionUpdate } from './src/utils/cacheVersioning';
 import { requireEnvVariables } from './src/utils/env';
 import { appLogger } from './src/utils/logger';
 import { handleNotificationReceived } from './src/utils/notificationHandlers';
+import { warmCriticalCaches } from './src/services/cacheWarming';
 import webVitalsService from './src/services/webVitals';
 
 // Keep the splash screen visible while we fetch resources
@@ -82,8 +83,8 @@ const App = () => {
         // Zustand persist automatically hydrates, we can assume it's done or add a small delay
         // to ensure initial data fetching completes.
 
-        // 3. Initial data fetch (simulate or add real fetch)
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 3. Warm critical caches (user profile + home feed) in parallel
+        await warmCriticalCaches();
       } catch (e) {
         console.warn('Error during app initialization:', e);
       } finally {
