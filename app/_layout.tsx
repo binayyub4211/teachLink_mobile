@@ -13,6 +13,7 @@ import { AnalyticsProvider, ErrorBoundary, OfflineIndicatorProvider } from '../s
 import { useAnalytics } from '../src/hooks';
 import { useDeepLink } from '../src/hooks/useDeepLink';
 import { sessionRestorationService } from '../src/services/sessionRestoration';
+import { preloadService } from '../src/services/preloadService';
 import { useAppStore } from '../src/store';
 import { getPathFromDeepLink } from '../src/utils/linkParser';
 import { prefetchExternalResources } from '../src/utils/resourceHints';
@@ -25,17 +26,34 @@ const ScreenTracker = () => {
   const segments = useSegments();
   const { trackScreen } = useAnalytics();
   const prevPathname = useRef<string | null>(null);
+  const router = useRouter();
+
+  // Initialize preload service
+  useEffect(() => {
+    preloadService.init();
+  }, []);
 
   useEffect(() => {
     if (pathname) {
       trackScreen(pathname, { segments: segments.join('/') });
+      
+      // Track and record transitions + trigger predictive preloading
 
       if (prevPathname.current !== pathname) {
+        const fromScreen = prevPathname.current;
         prevPathname.current = pathname;
+
+        if (fromScreen) {
+          preloadService.recordTransition(fromScreen, pathname);
+        }
+
         sessionRestorationService.saveRoute(pathname);
+        
+        // Trigger background preloading for predicted destinations
+        preloadService.preload(pathname, router);
       }
     }
-  }, [pathname, segments, trackScreen]);
+  }, [pathname, segments, trackScreen, router]);
 
   return null;
 };
