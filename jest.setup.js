@@ -168,6 +168,7 @@ jest.mock('expo-network', () => ({
       type: 'WIFI',
     })
   ),
+  addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
   NetworkStateType: {
     UNKNOWN: 0,
     NONE: 1,

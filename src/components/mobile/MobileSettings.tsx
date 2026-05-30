@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -38,8 +38,9 @@ import {
 import { useTheme, useAppStore } from '../../store';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useSettingsStore, ProfileVisibility, DownloadQuality } from '../../store/settingsStore';
-import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { useDynamicFontSize } from '../../hooks';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { useFormCache } from '../../hooks/useFormCache';
 
 import { NativeToggle } from './NativeToggle';
 import { PickerOption, SettingsPicker } from './SettingsPicker';
@@ -229,8 +230,27 @@ export function MobileSettings({ onSignOut, onChangePassword, onLinkedAccounts }
   } = useBiometricAuth();
 
   const { scale } = useDynamicFontSize();
+  const { clearCache: clearStoredFormFields } = useFormCache([]);
 
-  const handleBiometricToggle = async (value: boolean) => {
+  const handleClearFormCache = useCallback(() => {
+    Alert.alert(
+      'Clear Cached Form Data',
+      'Remove saved names, emails, and addresses from this device?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await clearStoredFormFields();
+            Alert.alert('Cleared', 'Cached form data has been removed.');
+          },
+        },
+      ]
+    );
+  }, [clearStoredFormFields]);
+
+  const handleBiometricToggle = useCallback(async (value: boolean) => {
     if (value) {
       const ok = await enableBiometric();
       if (!ok) {
@@ -239,16 +259,16 @@ export function MobileSettings({ onSignOut, onChangePassword, onLinkedAccounts }
     } else {
       await disableBiometric();
     }
-  };
+  }, [enableBiometric, disableBiometric]);
 
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     Alert.alert('Sign Out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: onSignOut },
     ]);
-  };
+  }, [onSignOut]);
 
-  const handleManualSync = async () => {
+  const handleManualSync = useCallback(async () => {
     Alert.alert('Sync', 'Sync data with server?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -264,19 +284,19 @@ export function MobileSettings({ onSignOut, onChangePassword, onLinkedAccounts }
         },
       },
     ]);
-  };
+  }, []);
 
-  const handleClearDownloads = () => {
+  const handleClearDownloads = useCallback(() => {
     Alert.alert('Clear Downloads', 'Remove all downloads?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', style: 'destructive' },
     ]);
-  };
+  }, []);
 
-  const handleToggleAdvanced = () => {
+  const handleToggleAdvanced = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowAdvancedSettings(prev => !prev);
-  };
+  }, []);
 
   return (
     <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
@@ -352,6 +372,14 @@ export function MobileSettings({ onSignOut, onChangePassword, onLinkedAccounts }
               icon={<BarChart2 size={18} />}
               label="Analytics"
               right={<NativeToggle value={analyticsEnabled} onValueChange={setAnalyticsEnabled} />}
+            />
+
+            <SettingRow
+              icon={<Trash2 size={18} color="red" />}
+              label="Clear Cached Form Data"
+              description="Remove saved autofill values from this device"
+              onPress={handleClearFormCache}
+              destructive
             />
           </SettingsSection>
 
