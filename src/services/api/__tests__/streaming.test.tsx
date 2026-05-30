@@ -1,6 +1,6 @@
 /**
  * STREAMING API - COMPREHENSIVE TEST SUITE
- * 
+ *
  * Tests for streaming API service, hook, and components
  * Covers unit tests, integration tests, and performance tests
  */
@@ -58,9 +58,7 @@ describe('StreamingApiService', () => {
         chunks.push(chunk.data);
       });
 
-      (global.fetch as jest.Mock).mockResolvedValue(
-        mockNDJSONResponse(mockStreamingData)
-      );
+      (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
       const result = await streamingApi.stream<MockItem>('/api/test', {
         onChunk,
@@ -75,9 +73,7 @@ describe('StreamingApiService', () => {
     it('should track TTFB (Time To First Byte)', async () => {
       const onFirstByte = jest.fn();
 
-      (global.fetch as jest.Mock).mockResolvedValue(
-        mockNDJSONResponse(mockStreamingData)
-      );
+      (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
       await streamingApi.stream<MockItem>('/api/test', {
         onFirstByte,
@@ -91,9 +87,7 @@ describe('StreamingApiService', () => {
     it('should track progress', async () => {
       const onProgress = jest.fn();
 
-      (global.fetch as jest.Mock).mockResolvedValue(
-        mockNDJSONResponse(mockStreamingData)
-      );
+      (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
       await streamingApi.stream<MockItem>('/api/test', {
         onProgress,
@@ -121,9 +115,10 @@ describe('StreamingApiService', () => {
 
     it('should timeout if response takes too long', async () => {
       (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise((resolve) => {
-          setTimeout(() => resolve(mockNDJSONResponse(mockStreamingData)), 60000);
-        })
+        () =>
+          new Promise(resolve => {
+            setTimeout(() => resolve(mockNDJSONResponse(mockStreamingData)), 60000);
+          })
       );
 
       try {
@@ -148,19 +143,17 @@ describe('StreamingApiService', () => {
         return Promise.resolve(mockNDJSONResponse(mockStreamingData));
       });
 
-      const result = await streamingApi.streamWithRetry<MockItem>(
-        '/api/test',
-        { maxRetries: 3, format: 'ndjson' }
-      );
+      const result = await streamingApi.streamWithRetry<MockItem>('/api/test', {
+        maxRetries: 3,
+        format: 'ndjson',
+      });
 
       expect(attempts).toBe(3);
       expect(result).toHaveLength(mockStreamingData.length);
     });
 
     it('should fail after max retries exceeded', async () => {
-      (global.fetch as jest.Mock).mockRejectedValue(
-        new Error('Persistent network error')
-      );
+      (global.fetch as jest.Mock).mockRejectedValue(new Error('Persistent network error'));
 
       try {
         await streamingApi.streamWithRetry<MockItem>('/api/test', {
@@ -196,9 +189,7 @@ describe('StreamingApiService', () => {
 
   describe('measureTTFB()', () => {
     it('should measure and return TTFB', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue(
-        mockNDJSONResponse(mockStreamingData)
-      );
+      (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
       const ttfb = await streamingApi.measureTTFB('/api/test');
 
@@ -216,9 +207,7 @@ describe('useStreamingData Hook', () => {
   });
 
   it('should fetch data on mount with autoFetch=true', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', { autoFetch: true })
@@ -243,9 +232,7 @@ describe('useStreamingData Hook', () => {
   });
 
   it('should track streaming progress', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', { autoFetch: true })
@@ -257,9 +244,7 @@ describe('useStreamingData Hook', () => {
   });
 
   it('should record TTFB', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', { autoFetch: true })
@@ -276,9 +261,7 @@ describe('useStreamingData Hook', () => {
       mockStreamingData[0], // Duplicate
     ];
 
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(duplicateData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(duplicateData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', {
@@ -293,35 +276,28 @@ describe('useStreamingData Hook', () => {
   });
 
   it('should apply transformation function', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
-      useStreamingData<MockItem & { transformed: boolean }>(
-        '/api/test',
-        {
-          autoFetch: true,
-          transform: (item) => ({
-            ...item,
-            transformed: true,
-          }),
-        }
-      )
+      useStreamingData<MockItem & { transformed: boolean }>('/api/test', {
+        autoFetch: true,
+        transform: item => ({
+          ...item,
+          transformed: true,
+        }),
+      })
     );
 
     await waitFor(() => {
       expect(result.current.data.length).toBeGreaterThan(0);
-      result.current.data.forEach((item) => {
+      result.current.data.forEach(item => {
         expect((item as any).transformed).toBe(true);
       });
     });
   });
 
   it('should allow manual fetch', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', { autoFetch: false })
@@ -360,9 +336,7 @@ describe('useStreamingData Hook', () => {
   });
 
   it('should reset state', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const { result } = renderHook(() =>
       useStreamingData<MockItem>('/api/test', { autoFetch: true })
@@ -386,25 +360,13 @@ describe('useStreamingData Hook', () => {
 
 describe('StreamingProgressBar Component', () => {
   it('should render when streaming', () => {
-    render(
-      <StreamingProgressBar
-        progress={50}
-        isStreaming={true}
-        chunkCount={5}
-        ttfb={250}
-      />
-    );
+    render(<StreamingProgressBar progress={50} isStreaming={true} chunkCount={5} ttfb={250} />);
 
     expect(screen.getByText('50%')).toBeVisible();
   });
 
   it('should not render when not streaming and progress is 0', () => {
-    const { container } = render(
-      <StreamingProgressBar
-        progress={0}
-        isStreaming={false}
-      />
-    );
+    const { container } = render(<StreamingProgressBar progress={0} isStreaming={false} />);
 
     expect(container.firstChild).toBeNull();
   });
@@ -426,13 +388,7 @@ describe('StreamingProgressBar Component', () => {
   });
 
   it('should hide metrics when showMetrics is false', () => {
-    render(
-      <StreamingProgressBar
-        progress={75}
-        isStreaming={true}
-        showMetrics={false}
-      />
-    );
+    render(<StreamingProgressBar progress={75} isStreaming={true} showMetrics={false} />);
 
     expect(screen.queryByText(/75%/)).toBeNull();
   });
@@ -455,13 +411,9 @@ describe('StreamingProgressBar Component', () => {
 
 describe('useTTFBMeasurement Hook', () => {
   it('should measure and return TTFB', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
-    const { result } = renderHook(() =>
-      useTTFBMeasurement('/api/test')
-    );
+    const { result } = renderHook(() => useTTFBMeasurement('/api/test'));
 
     expect(result.current.isLoading).toBe(true);
 
@@ -473,13 +425,9 @@ describe('useTTFBMeasurement Hook', () => {
   });
 
   it('should handle measurement errors', async () => {
-    (global.fetch as jest.Mock).mockRejectedValue(
-      new Error('Network error')
-    );
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-    const { result } = renderHook(() =>
-      useTTFBMeasurement('/api/test')
-    );
+    const { result } = renderHook(() => useTTFBMeasurement('/api/test'));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -493,24 +441,17 @@ describe('useTTFBMeasurement Hook', () => {
 
 describe('Streaming Integration', () => {
   it('should work end-to-end: hook + component', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(mockStreamingData)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(mockStreamingData));
 
     const TestComponent = () => {
-      const { data, isStreaming, progress, ttfb } = useStreamingData<MockItem>(
-        '/api/test',
-        { autoFetch: true }
-      );
+      const { data, isStreaming, progress, ttfb } = useStreamingData<MockItem>('/api/test', {
+        autoFetch: true,
+      });
 
       return (
         <View>
-          <StreamingProgressBar
-            progress={progress}
-            isStreaming={isStreaming}
-            ttfb={ttfb}
-          />
-          {data.map((item) => (
+          <StreamingProgressBar progress={progress} isStreaming={isStreaming} ttfb={ttfb} />
+          {data.map(item => (
             <Text key={item.id}>{item.title}</Text>
           ))}
         </View>
@@ -526,7 +467,7 @@ describe('Streaming Integration', () => {
 
     // Content appears as data streams
     await waitFor(() => {
-      mockStreamingData.forEach((item) => {
+      mockStreamingData.forEach(item => {
         expect(screen.getByText(item.title)).toBeVisible();
       });
     });
@@ -542,22 +483,17 @@ describe('Streaming Performance', () => {
       title: `Item ${i}`,
     }));
 
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(largeDataSet)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(largeDataSet));
 
     const startTime = performance.now();
     let ttfbTime: number | null = null;
 
-    await streamingApi.stream(
-      '/api/large',
-      {
-        onFirstByte: (ttfb) => {
-          ttfbTime = ttfb;
-        },
-        format: 'ndjson',
-      }
-    );
+    await streamingApi.stream('/api/large', {
+      onFirstByte: ttfb => {
+        ttfbTime = ttfb;
+      },
+      format: 'ndjson',
+    });
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
@@ -573,16 +509,11 @@ describe('Streaming Performance', () => {
       description: `Description for item ${i}`,
     }));
 
-    (global.fetch as jest.Mock).mockResolvedValue(
-      mockNDJSONResponse(largeDataSet)
-    );
+    (global.fetch as jest.Mock).mockResolvedValue(mockNDJSONResponse(largeDataSet));
 
     const startTime = performance.now();
 
-    const result = await streamingApi.stream(
-      '/api/large',
-      { format: 'ndjson' }
-    );
+    const result = await streamingApi.stream('/api/large', { format: 'ndjson' });
 
     const endTime = performance.now();
 
