@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/rinafcode/teachLink_mobile/compare/v1.9.0...v1.10.0) (2026-05-30)
+
+
+### Features
+
+* implement search cancellation in MobileSearch component ([0bd5fe4](https://github.com/rinafcode/teachLink_mobile/commit/0bd5fe495d7ac7c99052a35373a025fe3ea5844e))
+
 # [1.9.0](https://github.com/rinafcode/teachLink_mobile/compare/v1.8.0...v1.9.0) (2026-05-30)
 
 
