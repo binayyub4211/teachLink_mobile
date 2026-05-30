@@ -1,12 +1,16 @@
 import * as Network from 'expo-network';
-import logger from '../utils/logger';
+
 import apiService from './api';
 import { offlineStorage, SyncOperation } from './offlineStorage';
 import syncEntityManager from './sync/syncEntityManager';
+import { useSettingsStore } from '../store/settingsStore';
+import logger from '../utils/logger';
+
 import type {
     ConflictResolutionStrategy as VersionedConflictResolutionStrategy,
     VersionedEntity,
 } from './sync/types';
+
 
 // Sync service configuration
 interface SyncConfig {
@@ -89,15 +93,21 @@ class SyncService {
    */
   async manualSync(): Promise<void> {
     logger.info('Manual sync triggered');
-    await this.syncPendingOperations();
+    await this.syncPendingOperations(true);
   }
 
   /**
    * Main sync process
    */
-  private async syncPendingOperations(): Promise<void> {
+  private async syncPendingOperations(isManual = false): Promise<void> {
     if (this.isSyncing) {
       logger.debug('Sync already in progress, skipping');
+      return;
+    }
+
+    const settings = useSettingsStore.getState();
+    if (settings.dataSaverEnabled && !isManual) {
+      logger.debug('SyncService: Skipped auto-sync — Data Saver mode enabled');
       return;
     }
 
