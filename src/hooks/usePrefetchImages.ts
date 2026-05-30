@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+
+import { useSettingsStore } from '../store/settingsStore';
 import { ImageCache } from '../utils/imageCache';
 import logger from '../utils/logger';
 
@@ -60,6 +62,7 @@ export function usePrefetchImages(
   options: UsePrefetchImagesOptions = {},
 ): UsePrefetchImagesReturn {
   const { auto = true, onComplete, onError, delay = 0 } = options;
+  const dataSaverEnabled = useSettingsStore(state => state.dataSaverEnabled);
 
   // ─── State ────────────────────────────────────────────────────────────────
 
@@ -70,6 +73,11 @@ export function usePrefetchImages(
 
   const prefetch = useCallback(
     async (toFetch: (string | null | undefined)[]) => {
+      if (dataSaverEnabled) {
+        logger.debug('usePrefetchImages: Skipped prefetching — Data Saver mode enabled');
+        return [];
+      }
+
       try {
         setIsPrefetching(true);
 
@@ -105,13 +113,13 @@ export function usePrefetchImages(
         setIsPrefetching(false);
       }
     },
-    [onComplete, onError],
+    [onComplete, onError, dataSaverEnabled],
   );
 
   // ─── Auto-prefetch on mount or URL change ─────────────────────────────────
 
   useEffect(() => {
-    if (!auto) return;
+    if (!auto || dataSaverEnabled) return;
 
     const validUrls = urls.filter((url) => !!url) as string[];
     if (validUrls.length === 0) return;
@@ -126,7 +134,7 @@ export function usePrefetchImages(
     }
 
     prefetch(urls);
-  }, [urls, auto, delay, prefetch]);
+  }, [urls, auto, delay, prefetch, dataSaverEnabled]);
 
   // ─── Clear cache function ──────────────────────────────────────────────────
 
