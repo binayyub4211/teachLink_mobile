@@ -4,7 +4,6 @@ import { AppState, type AppStateStatus } from 'react-native';
 
 import { useAppStore } from '../store';
 import { useSettingsStore } from '../store/settingsStore';
-import { useTheme } from '../store';
 
 export const DARK_LUX_THRESHOLD = 25;
 export const LIGHT_LUX_THRESHOLD = 75;
@@ -78,7 +77,7 @@ export function useAdaptiveTheme(): void {
     };
 
     const handleReading = (lux: number) => {
-      const currentTheme = useTheme(); // Changed from useAppStore.getState().theme
+      const currentTheme = useAppStore.getState().theme;
       const { state, confirmedTheme } = advanceDebounce(debounceRef.current, lux, currentTheme);
       debounceRef.current = state;
       if (confirmedTheme) {

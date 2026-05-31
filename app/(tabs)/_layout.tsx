@@ -7,6 +7,18 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/store';
 
+const HomeIcon = ({ color }: { color: string }) => (
+  <IconSymbol size={28} name="house.fill" color={color} />
+);
+
+const SearchIcon = ({ color }: { color: string }) => (
+  <IconSymbol size={28} name="magnifyingglass" color={color} />
+);
+
+const ProfileIcon = ({ color }: { color: string }) => (
+  <IconSymbol size={28} name="person.fill" color={color} />
+);
+
 const TabLayout = () => {
   const theme = useTheme();
 
@@ -25,23 +37,21 @@ const TabLayout = () => {
           name="index"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+            tabBarIcon: HomeIcon,
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
             title: 'Search',
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="magnifyingglass" color={color} />
-            ),
+            tabBarIcon: SearchIcon,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+            tabBarIcon: ProfileIcon,
           }}
         />
       </Tabs>

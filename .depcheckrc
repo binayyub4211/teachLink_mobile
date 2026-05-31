@@ -4,6 +4,19 @@
     "@storybook/addon-ondevice-controls",
     "@storybook/addon-ondevice-actions",
     "storybook",
-    "@storybook/react"
+    "@storybook/react",
+    "expo-speech-recognition",
+    "expo-system-ui",
+    "prettier-plugin-tailwindcss",
+    "@lhci/cli",
+    "@size-limit/preset-app",
+    "@testing-library/jest-native",
+    "@types/babel__generator",
+    "@types/babel__template",
+    "@types/babel__traverse",
+    "react-native-nitro-modules",
+    "metro",
+    "k6",
+    "js-yaml"
   ]
 }

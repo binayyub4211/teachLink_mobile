@@ -9,13 +9,17 @@ import {
 } from '../../src/services/performanceExperiments';
 import { AnalyticsEvent } from '../../src/utils/trackingEvents';
 
-jest.mock('../../src/services/mobileAnalytics', () => ({
-  __esModule: true,
-  default: {
+jest.mock('../../src/services/mobileAnalytics', () => {
+  const mockAnalytics = {
     trackEvent: jest.fn(),
     trackPerformance: jest.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: mockAnalytics,
+    mobileAnalyticsService: mockAnalytics,
+  };
+});
 
 const mockAsyncStorage = AsyncStorage as jest.Mocked<typeof AsyncStorage>;
 const mockAnalytics = mobileAnalyticsService as jest.Mocked<typeof mobileAnalyticsService>;
