@@ -3,8 +3,8 @@ import React from 'react';
 
 import { CachedImage } from '../../components/ui/CachedImage';
 import { usePrefetchImages } from '../../hooks/usePrefetchImages';
-import { ImageCache } from '../../utils/imageCache';
 import { useSettingsStore } from '../../store/settingsStore';
+import { ImageCache } from '../../utils/imageCache';
 
 // ─── CDN Mock ─────────────────────────────────────────────────────────────────
 // getCDNAssetUrl rewrites remote URLs by appending ?v=<version>.
@@ -44,11 +44,35 @@ jest.mock('@/utils/logger', () => ({
   error: jest.fn(),
 }));
 
+// ─── Store Mock ───────────────────────────────────────────────────────────────
+// Default: data saver OFF so CDN routing and prefetch are fully exercised.
+jest.mock('@/store/settingsStore', () => {
+  const store = { dataSaverEnabled: false };
+  const mockUseSettingsStore = jest.fn(selector => {
+    if (typeof selector === 'function') {
+      return selector(store);
+    }
+    return store;
+  });
+
+  Object.assign(mockUseSettingsStore, {
+    setState: jest.fn(newState => {
+      Object.assign(store, newState);
+    }),
+    getState: jest.fn(() => store),
+  });
+
+  return {
+    useSettingsStore: mockUseSettingsStore,
+  };
+});
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('Image Cache Integration - Issue #143', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useSettingsStore.setState({ dataSaverEnabled: false });
   });
 
   // ─── CachedImage Component Tests ───────────────────────────────────────────

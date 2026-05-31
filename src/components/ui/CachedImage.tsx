@@ -3,8 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useSettingsStore } from '../../store/settingsStore';
+import { getCDNAssetUrl } from '../../utils/cdn';
 import { ImageCache } from '../../utils/imageCache';
-import appLogger from '../../utils/logger'; // eslint-disable-line import/no-named-as-default
+import logger from '../../utils/logger'; // eslint-disable-line import/no-named-as-default
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -12,16 +13,16 @@ export function getLowQualityImageUrl(uri: string): string {
   if (!uri) return uri;
   // Replace @2x or @3x with @1x
   let optimized = uri.replace(/@[23]x\b/g, '@1x');
-  
+
   if (optimized.startsWith('http://') || optimized.startsWith('https://')) {
     const hashParts = optimized.split('#');
     let baseAndQuery = hashParts[0];
     const hash = hashParts[1] ? `#${hashParts[1]}` : '';
-    
+
     const queryParts = baseAndQuery.split('?');
     let baseUrl = queryParts[0];
     let query = queryParts[1] || '';
-    
+
     const params = new Map<string, string>();
     if (query) {
       query.split('&').forEach(pair => {
@@ -29,14 +30,14 @@ export function getLowQualityImageUrl(uri: string): string {
         if (k) params.set(decodeURIComponent(k), v ? decodeURIComponent(v) : '');
       });
     }
-    
+
     params.set('quality', 'low');
     params.set('q', '30');
-    
+
     const newQuery = Array.from(params.entries())
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
-      
+
     optimized = `${baseUrl}?${newQuery}${hash}`;
   }
   return optimized;
@@ -100,63 +101,61 @@ export const CachedImage: React.FC<CachedImageProps> = ({
 }) => {
   const dataSaverEnabled = useSettingsStore(state => state.dataSaverEnabled);
   const resolvedUri = dataSaverEnabled && uri ? getLowQualityImageUrl(uri) : uri;
+  // Route through CDN for versioned delivery and 1-year cache headers
+  const cdnUri = resolvedUri ? getCDNAssetUrl(resolvedUri) : resolvedUri;
 
-  const [isLoading, setIsLoading] = useState(!!resolvedUri);
-  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(!!cdnUri);
 
   // ─── Prefetch image on mount or when URI changes ──────────────────────────
 
   useEffect(() => {
-    if (!resolvedUri) {
+    if (!cdnUri) {
       setIsLoading(false);
       return;
     }
 
     if (autoPrefetch && !dataSaverEnabled) {
       setIsLoading(true);
-      ImageCache.prefetchImages([resolvedUri])
+      ImageCache.prefetchImages([cdnUri])
         .then(() => {
-          logger.debug(`✅ Image prefetched: ${resolvedUri}`);
+          logger.debug(`✅ Image prefetched: ${cdnUri}`);
         })
         .catch(e => {
-          logger.warn(`Failed to prefetch image: ${resolvedUri}`, e);
-          setError(e instanceof Error ? e : new Error(String(e)));
+          logger.warn(`Failed to prefetch image: ${cdnUri}`, e);
           onLoadError?.(e instanceof Error ? e : new Error(String(e)));
         });
     } else {
       setIsLoading(true);
     }
-  }, [resolvedUri, autoPrefetch, dataSaverEnabled, onLoadError]);
+  }, [cdnUri, autoPrefetch, dataSaverEnabled, onLoadError]);
 
   // ─── Handle loading complete ───────────────────────────────────────────────
 
   const handleLoadingComplete = () => {
     setIsLoading(false);
-    setError(null);
     onLoadComplete?.();
-    logger.debug(`✅ CachedImage rendered: ${resolvedUri}`);
+    logger.debug(`✅ CachedImage rendered: ${cdnUri}`);
   };
 
   // ─── Handle loading error ──────────────────────────────────────────────────
 
   const handleError = (e: any) => {
-    const error = e instanceof Error ? e : new Error(String(e));
+    const err = e instanceof Error ? e : new Error(String(e));
     setIsLoading(false);
-    setError(error);
-    onLoadError?.(error);
-    logger.warn(`Failed to load image: ${resolvedUri}`, error);
+    onLoadError?.(err);
+    logger.warn(`Failed to load image: ${cdnUri}`, err);
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
-  if (!resolvedUri) {
+  if (!cdnUri) {
     return null;
   }
 
   return (
     <View style={[styles.container, style]}>
       <ExpoImage
-        source={{ uri: resolvedUri }}
+        source={{ uri: cdnUri }}
         onLoadingComplete={handleLoadingComplete}
         onError={handleError}
         accessibilityLabel={alt}
