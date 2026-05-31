@@ -1,5 +1,5 @@
 import { Course } from "../../types/course";
-import apiClient from "./axios.config";
+import { batchClient } from "./batchClient";
 import { fetchWithSWR, invalidateCache } from "./cache";
 
 const COURSES_KEY = "courses:list";
@@ -13,7 +13,7 @@ export const courseApi = {
   getCourses(): Promise<Course[]> {
     return fetchWithSWR(
       COURSES_KEY,
-      () => apiClient.get<Course[]>("/courses").then((r) => r.data),
+      () => batchClient.get("/courses"),
       TTL,
       STALE_TTL,
     );
@@ -22,7 +22,7 @@ export const courseApi = {
   getCourse(id: string): Promise<Course> {
     return fetchWithSWR(
       courseKey(id),
-      () => apiClient.get<Course>(`/courses/${id}`).then((r) => r.data),
+      () => batchClient.get(`/courses/${id}`),
       TTL,
       STALE_TTL,
     );
