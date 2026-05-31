@@ -28,14 +28,14 @@ export * from './useStreamingData';
 export * from './useSwipe';
 export * from './useVideoGestures';
 export * from './useVoiceRecognition';
+export * from './useFocusRestore';
+export * from './useFocusTrap';
 
 // Optimized gesture handlers (named exports avoid duplicate SwipeDirection/SwipeInfo types)
 export { OptimizedLongPressView, useOptimizedLongPress } from './useOptimizedLongPress';
 export { OptimizedPinchZoomView, useOptimizedPinchZoom } from './useOptimizedPinchZoom';
 export { OptimizedSwipeView, useOptimizedSwipe } from './useOptimizedSwipe';
 export { OptimizedVideoGesturesView, useOptimizedVideoGestures } from './useOptimizedVideoGestures';
-
-export * from './useDebounce';
 export * from './useHealthDashboard';
 export * from './usePredictivePreload';
-
+export * from './useReactProfiler';
