@@ -11,6 +11,11 @@ concurrency:
   group: perf-regression-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   # ─────────────────────────────────────────────
   # 1. Bundle Size Check (size-limit + regression)
