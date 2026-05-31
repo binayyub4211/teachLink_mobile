@@ -1,6 +1,8 @@
+import './src/utils/assetInlinePolyfill';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef } from 'react';
-import { Alert, AppState, AppStateStatus, LogBox } from 'react-native';
+import { Alert, AppState, AppStateStatus, InteractionManager, LogBox } from 'react-native';
+
 
 import StorybookUI from './.rnstorybook';
 import './global.css';
@@ -8,34 +10,15 @@ import './global.css';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
-import { StartupProgressOverlay } from './src/components/common/StartupProgressOverlay';
-import { requireEnvVariables } from './src/config';
 import { initializeLogging } from './src/config/logging';
 import { AuthProvider, useAdaptiveTheme } from './src/hooks';
 import AppNavigator from './src/navigation/AppNavigator';
-import { setupNotificationNavigation } from './src/navigation/linking';
-import { apiClient } from './src/services/api';
-import { crashReportingService } from './src/services/cashReporting';
-import { memoryPressureService } from './src/services/memoryPressureService';
-import { mobileAuthService } from './src/services/mobileAuth';
-import {
-    addNotificationReceivedListener,
-    getLastNotificationResponse,
-    registerForPushNotifications, registerTokenWithBackend,
-    removeNotificationListener,
-} from './src/services/pushNotifications';
-import { requestQueue } from './src/services/requestQueue';
-import { initializeSecureStorage } from './src/services/secureStorage';
-import socketService from './src/services/socket';
-import syncService from './src/services/syncService';
-import { useAppStore } from './src/store';
-import { useNotificationStore } from './src/store/notificationStore';
 import { warmCriticalCaches } from './src/services/cacheWarming';
-import { startupProgressService } from './src/services/startupProgressService';
-import webVitalsService from './src/services/webVitals';
+import { mobileAuthService } from './src/services/mobileAuth';
+import socketService from './src/services/socket';
+import { useAppStore } from './src/store';
 import { handleCacheVersionUpdate } from './src/utils/cacheVersioning';
-import { appLogger, logger } from './src/utils/logger';
-import { handleNotificationReceived } from './src/utils/notificationHandlers';
+import { appLogger } from './src/utils/logger';
 import { prefetchExternalResources } from './src/utils/resourceHints';
 import { mobileAnalyticsService } from './src/services/mobileAnalytics';
 import { AnalyticsEvent, PerformanceMetric } from './src/utils/trackingEvents';
@@ -49,19 +32,11 @@ SplashScreen.preventAutoHideAsync();
 const SHOW_STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK === 'true';
 
 
-// Centralized structured logging initialized on startup
-requireEnvVariables();
+// Centralized structured logging initialized lazily in services bootstrap useEffect
+// requireEnvVariables();
 
 // Preconnect to API hosts and external resources
 prefetchExternalResources();
-
-// Initialize centralized logging on app start
-initializeLogging().catch(err => {
-  console.error('[App] Failed to initialize logging:', err);
-});
-
-// Start Core Web Vitals monitoring
-webVitalsService.init();
 
 if (__DEV__) {
   appLogger.infoSync('Development mode: centralized logger active');
@@ -151,75 +126,15 @@ const App = () => {
   const SESSION_REFRESH_WINDOW_MS = 5 * 60 * 1000;
 
   useEffect(() => {
-    // Initialize crash reporting at app startup
-    crashReportingService.init();
-
-    // Initialize secure storage (Keychain/Keystore) for encrypted token storage
-    initializeSecureStorage().catch((error) => {
-      logger.error('Failed to initialize secure storage:', error);
-      // Continue app startup even if secure storage init fails
-      // (user will be prompted to re-authenticate if needed)
+  // Lazy load Sentry after core initialization
+  InteractionManager.runAfterInteractions(() => {
+    initializeLogging().catch(err => {
+      console.error('[App] Failed to initialize logging:', err);
     });
-
-    // Add global handler for unhandled promise rejections
-    const unhandledRejectionHandler = (reason: any) => {
-      const error = reason instanceof Error ? reason : new Error(String(reason));
-      appLogger.errorSync('Unhandled Promise Rejection', error);
-      crashReportingService.reportError(error, 'UnhandledPromiseRejection');
-    };
-
-    // Register unhandled rejection listener
-    if (global.onunhandledrejection === undefined) {
-      // @ts-ignore - Setting global error handler
-      global.onunhandledrejection = unhandledRejectionHandler;
-    }
-
-    // Connect to socket when app starts
+    // Lazy connect socket.io after core initialization
     socketService.connect();
-
-    // Start memory pressure protection early
-    memoryPressureService.init();
-
-    // Initialize push notifications: request permissions and get device token
-    registerForPushNotifications().then(async (token) => {
-      if (token) {
-        const { setPushToken, setTokenRegistered } = useNotificationStore.getState();
-        setPushToken(token);
-        const registered = await registerTokenWithBackend(token);
-        setTokenRegistered(registered);
-      }
-    });
-
-    // Start request queue monitoring
-    requestQueue.startMonitoring(apiClient);
-
-    // Initialize and start sync service for background sync
-    syncService.startAutoSync();
-
-    // Set up notification navigation handler
-    const notificationCleanup = setupNotificationNavigation();
-
-    // Listen for notifications received while app is foregrounded
-    const subscription = addNotificationReceivedListener(handleNotificationReceived);
-
-    // Check if app was launched from a notification
-    getLastNotificationResponse().then(response => {
-      if (response) {
-        appLogger.infoSync('App launched from notification', { response });
-      }
-    });
-
-    // Cleanup on unmount
-    return () => {
-      socketService.disconnect();
-      syncService.stopAutoSync();
-      notificationCleanup();
-      removeNotificationListener(subscription);
-      // Clean up the unhandled rejection handler
-      // @ts-ignore
-      global.onunhandledrejection = undefined;
-    };
-  }, []);
+  });
+}, []);
 
   useEffect(() => {
     const checkSessionOnForeground = async () => {
