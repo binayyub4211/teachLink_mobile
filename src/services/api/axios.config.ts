@@ -80,7 +80,10 @@ function processRefreshQueue(token: string | null, error: unknown) {
 // ─── Request interceptor ───────────────────────────────────────────────────
 
 apiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig & { _timingFinish?: (success: boolean, status?: number) => ReturnType<typeof startTiming> }) => {
+  async (config: InternalAxiosRequestConfig & { _requestStartMs?: number }) => {
+    // Stamp request start time for latency tracking
+    config._requestStartMs = Date.now();
+
     // Skip adding token for refresh requests
     if (config.url?.includes("/auth/refresh")) {
       return config;
@@ -105,20 +108,36 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
-    // Record successful timing
-    const cfg = response.config as InternalAxiosRequestConfig & { _timingFinish?: ReturnType<typeof startTiming> };
-    if (cfg._timingFinish) {
-      const entry = cfg._timingFinish(true, response.status);
-      notifyEntry(entry);
-    }
+    // Record successful API call for health metrics
+    const cfg = response.config as InternalAxiosRequestConfig & { _requestStartMs?: number };
+    const durationMs = cfg._requestStartMs ? Date.now() - cfg._requestStartMs : 0;
+    healthMetricsService.recordApiCall({
+      endpoint: cfg.url ?? 'unknown',
+      method: (cfg.method ?? 'GET').toUpperCase(),
+      durationMs,
+      statusCode: response.status,
+    });
     return response;
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
       _retryCount?: number;
-      _timingFinish?: ReturnType<typeof startTiming>;
+      _requestStartMs?: number;
     };
+
+    // ── Record API error for health metrics ───────────────────────────────
+    if (originalRequest && error.response) {
+      const durationMs = originalRequest._requestStartMs
+        ? Date.now() - originalRequest._requestStartMs
+        : 0;
+      healthMetricsService.recordApiCall({
+        endpoint: originalRequest.url ?? 'unknown',
+        method: (originalRequest.method ?? 'GET').toUpperCase(),
+        durationMs,
+        statusCode: error.response.status,
+      });
+    }
 
     // ── Log non-network errors ────────────────────────────────────────────
     if (error.code === "ERR_NETWORK" || error.message === "Network Error") {

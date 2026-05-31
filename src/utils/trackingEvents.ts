@@ -36,13 +36,20 @@ export enum AnalyticsEvent {
 
   // Performance & Infrastructure
   PERFORMANCE_METRIC = 'performance_metric',
+  REACT_PROFILER_RENDER = 'react_profiler_render',
+  REACT_PROFILER_SLOW_RENDER = 'react_profiler_slow_render',
+  AB_ASSIGNMENT = 'ab_assignment',
+  AB_EXPOSURE = 'ab_exposure',
   API_ERROR = 'api_error',
   CRASH_REPORT = 'crash_report',
 
-  // Resource Timing (Issue #34)
-  API_TIMING = 'api_timing',
-  IMAGE_TIMING = 'image_timing',
-  RESOURCE_TIMING_SUMMARY = 'resource_timing_summary',
+  // Core Web Vitals
+  WEB_VITALS_LCP = 'web_vitals_lcp',
+  WEB_VITALS_FID = 'web_vitals_fid',
+  WEB_VITALS_CLS = 'web_vitals_cls',
+  WEB_VITALS_FCP = 'web_vitals_fcp',
+  WEB_VITALS_TTFB = 'web_vitals_ttfb',
+  WEB_VITALS_REGRESSION = 'web_vitals_regression',
 }
 
 /**
@@ -77,6 +84,17 @@ export enum PerformanceMetric {
   APP_LOAD_TIME = 'app_load_time',
   SCREEN_TRANSITION_TIME = 'screen_transition_time',
   API_RESPONSE_TIME = 'api_response_time',
+
+  // React Profiler
+  RENDER_DURATION = 'render_duration',
+  NAVIGATION_LATENCY = 'navigation_latency',
+
+  // Core Web Vitals
+  LCP = 'lcp',
+  FID = 'fid',
+  CLS = 'cls',
+  FCP = 'fcp',
+  TTFB = 'ttfb',
 }
 
 /**

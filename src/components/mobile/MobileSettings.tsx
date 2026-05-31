@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from 'react-native';
-
 import {
   BarChart2,
   Bell,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Download,
   Eye,
   Globe,
@@ -20,6 +22,7 @@ import {
   LogOut,
   MapPin,
   Play,
+  Settings2,
   Shield,
   Sun,
   Trash2,
@@ -29,18 +32,25 @@ import {
   Wifi,
   RefreshCw,
   Fingerprint as FingerprintPattern,
+  Database,
 } from 'lucide-react-native';
 
-import { useAppStore } from '../../store';
-import { useNotificationStore } from '../../store/notificationStore';
-import { useSettingsStore } from '../../store/settingsStore';
-import { useBiometricAuth } from '../../hooks/useBiometricAuth';
-import { useDynamicFontSize } from '../../hooks';
 
 import { NativeToggle } from './NativeToggle';
 import { PickerOption, SettingsPicker } from './SettingsPicker';
 import { SettingsSection } from './SettingsSection';
+import { useDynamicFontSize } from '../../hooks';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { useFormCache } from '../../hooks/useFormCache';
+import { useTheme, useAppStore } from '../../store';
+import { useNotificationStore } from '../../store/notificationStore';
+import { useSettingsStore, ProfileVisibility, DownloadQuality } from '../../store/settingsStore';
 import { AppText } from '../common/AppText';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─────────────────────────────────────────────────────────────
 // Shared Row
@@ -56,7 +66,7 @@ interface SettingRowProps {
   destructive?: boolean;
 }
 
-function SettingRow({
+const SettingRow = ({
   icon,
   iconBg = 'bg-gray-100 dark:bg-gray-700',
   label,
@@ -64,7 +74,7 @@ function SettingRow({
   right,
   onPress,
   destructive = false,
-}: SettingRowProps) {
+}: SettingRowProps) => {
   const Row = onPress ? TouchableOpacity : View;
   const { scale } = useDynamicFontSize();
 
@@ -90,7 +100,7 @@ function SettingRow({
         )}
       </View>
 
-      {right ?? (onPress ? <ChevronRight size={scale(16)} color="#9CA3AF" /> : null)}
+      {right ?? (onPress ? <ChevronDown size={scale(16)} color="#9CA3AF" /> : null)}
     </Row>
   );
 }
@@ -99,18 +109,18 @@ function SettingRow({
 // Options
 // ─────────────────────────────────────────────────────────────
 
-const VISIBILITY_OPTIONS: PickerOption[] = [
+const VISIBILITY_OPTIONS: PickerOption<ProfileVisibility>[] = [
   { label: 'Public', value: 'public' },
   { label: 'Friends Only', value: 'friends_only' },
   { label: 'Private', value: 'private' },
 ];
 
-const THEME_OPTIONS: PickerOption[] = [
+const THEME_OPTIONS: PickerOption<'light' | 'dark'>[] = [
   { label: 'Light', value: 'light' },
   { label: 'Dark', value: 'dark' },
 ];
 
-const QUALITY_OPTIONS: PickerOption[] = [
+const QUALITY_OPTIONS: PickerOption<DownloadQuality>[] = [
   { label: 'Low', value: 'low' },
   { label: 'Medium', value: 'medium' },
   { label: 'High', value: 'high' },
@@ -136,16 +146,54 @@ const FONT_SIZE_OPTIONS: PickerOption[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────
+// AdvancedToggle – pill button for expanding advanced settings
+// ─────────────────────────────────────────────────────────────
+
+interface AdvancedToggleProps {
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+const AdvancedToggle = ({ expanded, onToggle }: AdvancedToggleProps) => {
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={expanded ? 'Hide advanced settings' : 'Show advanced settings'}
+      accessibilityState={{ expanded }}
+      className="mx-4 my-3 flex-row items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800"
+    >
+      <View className="flex-row items-center gap-2">
+        <Settings2 size={16} color="#19c3e6" />
+        <AppText className="text-sm font-semibold text-cyan-500">
+          {expanded ? 'Hide Advanced Settings' : 'Advanced Settings'}
+        </AppText>
+      </View>
+      {expanded ? (
+        <ChevronUp size={16} color="#19c3e6" />
+      ) : (
+        <ChevronDown size={16} color="#19c3e6" />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────
 
-export function MobileSettings({
+export const MobileSettings = ({
   onSignOut,
   onChangePassword,
   onLinkedAccounts,
-}: any) {
-  const { theme, setTheme } = useAppStore();
+}: any) => {
+  const theme = useTheme();
+  const setTheme = useAppStore(state => state.setTheme);
   const { preferences, setPreference } = useNotificationStore();
+
+  // Progressive disclosure: advanced settings collapsed by default
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const {
     profileVisibility,
@@ -174,8 +222,8 @@ export function MobileSettings({
     setAutoplay,
     hapticFeedback,
     setHapticFeedback,
-    adaptiveThemeEnabled,
-    setAdaptiveThemeEnabled,
+    dataSaverEnabled,
+    setDataSaverEnabled,
   } = useSettingsStore();
 
   const {
@@ -188,8 +236,27 @@ export function MobileSettings({
   } = useBiometricAuth();
 
   const { scale } = useDynamicFontSize();
+  const { clearCache: clearStoredFormFields } = useFormCache([]);
 
-  const handleBiometricToggle = async (value: boolean) => {
+  const handleClearFormCache = useCallback(() => {
+    Alert.alert(
+      'Clear Cached Form Data',
+      'Remove saved names, emails, and addresses from this device?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await clearStoredFormFields();
+            Alert.alert('Cleared', 'Cached form data has been removed.');
+          },
+        },
+      ]
+    );
+  }, [clearStoredFormFields]);
+
+  const handleBiometricToggle = useCallback(async (value: boolean) => {
     if (value) {
       const ok = await enableBiometric();
       if (!ok) {
@@ -198,16 +265,16 @@ export function MobileSettings({
     } else {
       await disableBiometric();
     }
-  };
+  }, [enableBiometric, disableBiometric]);
 
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     Alert.alert('Sign Out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: onSignOut },
     ]);
-  };
+  }, [onSignOut]);
 
-  const handleManualSync = async () => {
+  const handleManualSync = useCallback(async () => {
     Alert.alert('Sync', 'Sync data with server?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -223,18 +290,24 @@ export function MobileSettings({
         },
       },
     ]);
-  };
+  }, []);
 
-  const handleClearDownloads = () => {
+  const handleClearDownloads = useCallback(() => {
     Alert.alert('Clear Downloads', 'Remove all downloads?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear', style: 'destructive' },
     ]);
-  };
+  }, []);
+
+  const handleToggleAdvanced = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setShowAdvancedSettings(prev => !prev);
+  }, []);
 
   return (
     <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
-      {/* ACCOUNT */}
+
+      {/* ── ESSENTIAL: ACCOUNT ─────────────────────────────── */}
       <SettingsSection title="Account">
         <SettingRow
           icon={<Eye size={18} color="#6366f1" />}
@@ -279,50 +352,7 @@ export function MobileSettings({
         <SettingRow icon={<User size={18} />} label="Change Password" onPress={onChangePassword} />
       </SettingsSection>
 
-      {/* PRIVACY */}
-      <SettingsSection title="Privacy">
-        <SettingRow
-          icon={<BarChart2 size={18} />}
-          label="Analytics"
-          right={<NativeToggle value={analyticsEnabled} onValueChange={setAnalyticsEnabled} />}
-        />
-      </SettingsSection>
-
-      {/* DOWNLOADS */}
-      <SettingsSection title="Downloads">
-        <SettingRow
-          icon={<Wifi size={18} />}
-          label="WiFi Only"
-          right={
-            <NativeToggle
-              value={downloadOverWifiOnly}
-              onValueChange={setDownloadOverWifiOnly}
-            />
-          }
-        />
-
-        <SettingRow
-          icon={<Download size={18} />}
-          label="Quality"
-          right={
-            <SettingsPicker
-              label="Quality"
-              value={downloadQuality}
-              options={QUALITY_OPTIONS}
-              onValueChange={setDownloadQuality}
-            />
-          }
-        />
-
-        <SettingRow
-          icon={<Trash2 size={18} color="red" />}
-          label="Clear Downloads"
-          onPress={handleClearDownloads}
-          destructive
-        />
-      </SettingsSection>
-
-      {/* APP */}
+      {/* ── ESSENTIAL: APP ─────────────────────────────────── */}
       <SettingsSection title="App">
         <SettingRow
           icon={<Sun size={18} />}
@@ -332,37 +362,87 @@ export function MobileSettings({
               label="Theme"
               value={theme}
               options={THEME_OPTIONS}
-              onValueChange={(value) => {
-                setTheme(value as 'light' | 'dark');
-                setAdaptiveThemeEnabled(false);
-              }}
+              onValueChange={setTheme}
             />
           }
         />
 
         <SettingRow
-          icon={<Sun size={18} color="#f59e0b" />}
-          label="Adaptive Theme"
-          description="Switch light/dark based on ambient light"
-          right={
-            <NativeToggle
-              value={adaptiveThemeEnabled}
-              onValueChange={setAdaptiveThemeEnabled}
+          icon={<Database size={18} color="#eab308" />}
+          label="Data Saver"
+          description="Reduces bandwidth by disabling prefetch and lowering image quality"
+          right={<NativeToggle value={dataSaverEnabled} onValueChange={setDataSaverEnabled} />}
+        />
+      </SettingsSection>
+
+      {/* ── PROGRESSIVE DISCLOSURE: ADVANCED SETTINGS ──────── */}
+      <AdvancedToggle expanded={showAdvancedSettings} onToggle={handleToggleAdvanced} />
+
+      {showAdvancedSettings && (
+        <>
+          {/* PRIVACY */}
+          <SettingsSection title="Privacy">
+            <SettingRow
+              icon={<BarChart2 size={18} />}
+              label="Analytics"
+              right={<NativeToggle value={analyticsEnabled} onValueChange={setAnalyticsEnabled} />}
             />
-          }
-        />
-      </SettingsSection>
 
-      {/* SYNC */}
-      <SettingsSection title="Sync">
-        <SettingRow
-          icon={<RefreshCw size={18} />}
-          label="Manual Sync"
-          onPress={handleManualSync}
-        />
-      </SettingsSection>
+            <SettingRow
+              icon={<Trash2 size={18} color="red" />}
+              label="Clear Cached Form Data"
+              description="Remove saved autofill values from this device"
+              onPress={handleClearFormCache}
+              destructive
+            />
+          </SettingsSection>
 
-      {/* SIGN OUT */}
+          {/* DOWNLOADS */}
+          <SettingsSection title="Downloads">
+            <SettingRow
+              icon={<Wifi size={18} />}
+              label="WiFi Only"
+              right={
+                <NativeToggle
+                  value={downloadOverWifiOnly}
+                  onValueChange={setDownloadOverWifiOnly}
+                />
+              }
+            />
+
+            <SettingRow
+              icon={<Download size={18} />}
+              label="Quality"
+              right={
+                <SettingsPicker
+                  label="Quality"
+                  value={downloadQuality}
+                  options={QUALITY_OPTIONS}
+                  onValueChange={setDownloadQuality}
+                />
+              }
+            />
+
+            <SettingRow
+              icon={<Trash2 size={18} color="red" />}
+              label="Clear Downloads"
+              onPress={handleClearDownloads}
+              destructive
+            />
+          </SettingsSection>
+
+          {/* SYNC */}
+          <SettingsSection title="Sync">
+            <SettingRow
+              icon={<RefreshCw size={18} />}
+              label="Manual Sync"
+              onPress={handleManualSync}
+            />
+          </SettingsSection>
+        </>
+      )}
+
+      {/* ── ESSENTIAL: ACCOUNT ACTIONS ─────────────────────── */}
       <SettingsSection title="Account Actions">
         <SettingRow
           icon={<LogOut size={18} color="red" />}
