@@ -4,6 +4,12 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useSettingsStore } from '../../store/settingsStore';
 import { ImageCache } from '../../utils/imageCache';
+import { 
+  detectImageDimensions, 
+  ImageDimensions, 
+  dimensionsCache,
+  calculateAspectRatioStyle 
+} from '../../utils/imageDimensions';
 import logger from '../../utils/logger';
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
@@ -59,6 +65,12 @@ interface CachedImageProps extends Omit<ExpoImageProps, 'source'> {
   onLoadError?: (error: Error) => void;
   /** Loading indicator color */
   loadingIndicatorColor?: string;
+  /** Pre-known image dimensions (from API) */
+  knownDimensions?: ImageDimensions;
+  /** Enable automatic dimension detection to prevent layout shift */
+  enableDimensionDetection?: boolean;
+  /** Container width for aspect ratio calculation */
+  containerWidth?: number;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -66,7 +78,7 @@ interface CachedImageProps extends Omit<ExpoImageProps, 'source'> {
 /**
  * CachedImage Component
  *
- * Wraps expo-image's Image component with automatic caching and prefetching.
+ * Wraps expo-image's Image component with automatic caching, prefetching, and dimension detection.
  * Provides performance optimization for image-heavy screens.
  *
  * Features:
@@ -75,6 +87,8 @@ interface CachedImageProps extends Omit<ExpoImageProps, 'source'> {
  * - Error handling
  * - Accessibility support
  * - Optional loading indicator
+ * - Automatic dimension detection to prevent layout shift
+ * - Aspect ratio preservation
  *
  * @example
  * ```tsx
@@ -83,6 +97,7 @@ interface CachedImageProps extends Omit<ExpoImageProps, 'source'> {
  *   alt="User avatar"
  *   style={{ width: 100, height: 100 }}
  *   autoPrefetch={true}
+ *   enableDimensionDetection={true}
  *   onLoadComplete={() => console.log('Image loaded')}
  * />
  * ```
@@ -95,6 +110,9 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   onLoadComplete,
   onLoadError,
   loadingIndicatorColor = '#2c8aec',
+  knownDimensions,
+  enableDimensionDetection = false,
+  containerWidth,
   style,
   ...expoImageProps
 }) => {
@@ -103,6 +121,39 @@ export const CachedImage: React.FC<CachedImageProps> = ({
 
   const [isLoading, setIsLoading] = useState(!!resolvedUri);
   const [error, setError] = useState<Error | null>(null);
+  const [detectedDimensions, setDetectedDimensions] = useState<ImageDimensions | null>(knownDimensions || null);
+  const [aspectRatioStyle, setAspectRatioStyle] = useState<{ width: number; height: number } | null>(null);
+
+  // ─── Detect dimensions if enabled and not already known ─────────────────────
+
+  useEffect(() => {
+    if (!resolvedUri || !enableDimensionDetection || detectedDimensions) {
+      return;
+    }
+
+    // Check cache first
+    if (dimensionsCache.has(resolvedUri)) {
+      const cached = dimensionsCache.get(resolvedUri);
+      if (cached) {
+        setDetectedDimensions(cached);
+        if (containerWidth) {
+          setAspectRatioStyle(calculateAspectRatioStyle(cached, containerWidth));
+        }
+        return;
+      }
+
+      // Detect dimensions
+      detectImageDimensions(resolvedUri).then(dimensions => {
+        if (dimensions) {
+          setDetectedDimensions(dimensions);
+          dimensionsCache.set(resolvedUri, dimensions);
+          if (containerWidth) {
+            setAspectRatioStyle(calculateAspectRatioStyle(dimensions, containerWidth));
+          }
+        }
+      });
+    }
+  }, [resolvedUri, enableDimensionDetection, detectedDimensions, containerWidth]);
 
   // ─── Prefetch image on mount or when URI changes ──────────────────────────
 
@@ -147,6 +198,22 @@ export const CachedImage: React.FC<CachedImageProps> = ({
     logger.warn(`Failed to load image: ${resolvedUri}`, error);
   };
 
+  // ─── Calculate container style with aspect ratio ─────────────────────────
+
+  const getContainerStyle = () => {
+    if (aspectRatioStyle) {
+      return [
+        styles.container,
+        {
+          width: aspectRatioStyle.width,
+          height: aspectRatioStyle.height,
+        },
+        style,
+      ];
+    }
+    return [styles.container, style];
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!resolvedUri) {
@@ -154,7 +221,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
   }
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={getContainerStyle()}>
       <ExpoImage
         source={{ uri: resolvedUri }}
         onLoadingComplete={handleLoadingComplete}
@@ -162,7 +229,7 @@ export const CachedImage: React.FC<CachedImageProps> = ({
         accessibilityLabel={alt}
         accessibilityRole="image"
         {...expoImageProps}
-        style={[styles.image, style]}
+        style={[styles.image, aspectRatioStyle ? { aspectRatio: detectedDimensions?.aspectRatio } : null, style]}
       />
 
       {/* Loading indicator overlay */}

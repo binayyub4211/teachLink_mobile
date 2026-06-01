@@ -161,6 +161,7 @@
     "tmp": "^0.2.7",
     "uuid": "^14.0.0"
   },
+  "sideEffects": false,
   "private": true,
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx}": [

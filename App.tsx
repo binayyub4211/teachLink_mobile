@@ -5,8 +5,8 @@ import { Alert, AppState, AppStateStatus, InteractionManager, LogBox } from 'rea
 
 import './global.css';
 
-import * as Font from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
+import { loadAsync as FontLoadAsync } from 'expo-font';
+import { preventAutoHideAsync, hideAsync } from 'expo-splash-screen';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 import { initializeLogging } from './src/config/logging';
 import { AuthProvider, useAdaptiveTheme } from './src/hooks';
@@ -29,7 +29,7 @@ import { StartupProgressOverlay } from './src/components/common/StartupProgressO
 const appStartTime = Date.now();
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+preventAutoHideAsync();
 
 // Centralized structured logging initialized lazily in services bootstrap useEffect
 // requireEnvVariables();
@@ -67,7 +67,7 @@ const App = () => {
 
         // 1. Load fonts
         startupProgressService.startStep('fonts');
-        await Font.loadAsync({
+        await FontLoadAsync({
           'Inter-Regular': require('./assets/fonts/Inter-Regular.ttf'),
           'Inter-Bold': require('./assets/fonts/Inter-Bold.ttf'),
         });
