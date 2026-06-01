@@ -1,27 +1,23 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Filter, FilterX, Upload } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import { Filter, FilterX } from 'lucide-react-native';
+import React, { useCallback, useMemo } from 'react';
 import {
-  FlatList,
-  ListRenderItemInfo,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    ListRenderItemInfo,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-import { GridExporter } from './GridExporter';
-import { GridFiltering } from './GridFiltering';
-import { InlineEditing } from './InlineEditing';
 import { useDataGrid, UseDataGridOptions } from '../../hooks/useDataGrid';
 import { ColumnDef, ExportFormat, GridRow, SortConfig, SortDirection } from '../../utils/gridUtils';
 import { ErrorBoundary } from '../common/ErrorBoundary';
-import { Skeleton } from '../ui/Skeleton';
-import { BatchProgress, batchImportCSV } from '../../services/batchDataProcessor';
-
-// Import for document picking (web and native)
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import { MemoizedSortIcon } from '../ui/MemoizedIcon';
+import { GridExporter } from './GridExporter';
+import { GridFiltering } from './GridFiltering';
+import { InlineEditing } from './InlineEditing';
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -455,15 +451,11 @@ const HeaderRow = <T extends GridRow>({
   );
 };
 
-// ─── SortIcon ─────────────────────────────────────────────────────────────────
+// ─── SortIcon (Memoized for performance) ──────────────────────────────────────
+// Issue #361: SVG components wrapped with React.memo to prevent re-renders on parent updates
 
 const SortIcon = ({ direction }: { direction: SortDirection | null }) => {
-  const color = direction ? '#19c3e6' : '#D1D5DB';
-  const size = 13;
-
-  if (direction === 'asc') return <ArrowUp size={size} color={color} />;
-  if (direction === 'desc') return <ArrowDown size={size} color={color} />;
-  return <ArrowUpDown size={size} color={color} />;
+  return <MemoizedSortIcon direction={direction} size={13} />;
 };
 
 // ─── DataRow ──────────────────────────────────────────────────────────────────
