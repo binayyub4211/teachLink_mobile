@@ -1,4 +1,6 @@
 import React, { useCallback, useState } from 'react';
+import { useRouter } from 'expo-router';
+
 import {
   Alert,
   ActivityIndicator,
@@ -32,6 +34,7 @@ import {
   Wifi,
   RefreshCw,
   Fingerprint as FingerprintPattern,
+  Zap,
   Database,
 } from 'lucide-react-native';
 
@@ -437,6 +440,16 @@ export const MobileSettings = ({
               icon={<RefreshCw size={18} />}
               label="Manual Sync"
               onPress={handleManualSync}
+            />
+          </SettingsSection>
+
+          {/* PERFORMANCE & UTILITIES */}
+          <SettingsSection title="Performance & Utilities">
+            <SettingRow
+              icon={<Zap size={18} color="#06b6d4" />}
+              label="Clipboard Optimizer"
+              description="Test & profile asynchronous clipboard operations"
+              onPress={() => router.push('/clipboard-demo')}
             />
           </SettingsSection>
         </>
