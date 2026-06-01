@@ -1,56 +1,41 @@
 import React, { useState } from 'react';
 import {
-  Alert,
-  ActivityIndicator,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  TouchableOpacity,
-  UIManager,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import {
-  BarChart2,
-  Bell,
-  ChevronDown,
-  ChevronUp,
-  Download,
-  Eye,
-  Globe,
-  HardDrive,
-  Lock,
-  LogOut,
-  MapPin,
-  Play,
-  Settings2,
-  Shield,
-  Sun,
-  Trash2,
-  Type,
-  User,
-  Vibrate,
-  Wifi,
-  RefreshCw,
-  Fingerprint as FingerprintPattern,
+    BarChart2,
+    ChevronDown,
+    ChevronUp,
+    Download,
+    Eye,
+    Fingerprint as FingerprintPattern,
+    Lock,
+    LogOut,
+    RefreshCw,
+    Settings2,
+    Sun,
+    Trash2,
+    User,
+    Wifi
 } from 'lucide-react-native';
 
-import { useTheme, useAppStore } from '../../store';
-import { useNotificationStore } from '../../store/notificationStore';
-import { useSettingsStore, ProfileVisibility, DownloadQuality } from '../../store/settingsStore';
 import { useDynamicFontSize } from '../../hooks';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { useFormCache } from '../../hooks/useFormCache';
+import { useAppStore, useTheme } from '../../store';
+import { useNotificationStore } from '../../store/notificationStore';
+import { DownloadQuality, ProfileVisibility, useSettingsStore } from '../../store/settingsStore';
+import { configureNext } from '../../utils/layoutAnimation';
 
+import { AppText } from '../common/AppText';
 import { NativeToggle } from './NativeToggle';
 import { PickerOption, SettingsPicker } from './SettingsPicker';
 import { SettingsSection } from './SettingsSection';
-import { AppText } from '../common/AppText';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ─────────────────────────────────────────────────────────────
 // Shared Row
@@ -298,7 +283,7 @@ export function MobileSettings({
   };
 
   const handleToggleAdvanced = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    configureNext();
     setShowAdvancedSettings(prev => !prev);
   };
 

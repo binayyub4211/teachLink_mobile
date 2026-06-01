@@ -21,22 +21,16 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  LayoutAnimation,
   Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import { useFormCache } from '../../hooks/useFormCache';
 import { PROFILE_FORM_CACHE_KEYS } from '../../services/formCache';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { configureNext } from '../../utils/layoutAnimation';
 import { Achievement, AchievementBadges } from './AchievementBadges';
 import { AvatarCamera } from './AvatarCamera';
 import { MobileFormInput } from './MobileFormInput';
@@ -390,7 +384,7 @@ export const MobileProfile: React.FC<MobileProfileProps> = ({
   };
 
   const handleToggleAdvancedFields = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    configureNext();
     setShowAdvancedFields(prev => !prev);
   };
 
